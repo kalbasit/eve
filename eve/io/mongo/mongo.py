@@ -896,6 +896,7 @@ def create_index(app, resource, name, list_of_keys, index_options):
     # life cicle, it is just called when the app start and it uses
     # pymongo directly.
     collection = app.config['SOURCES'][resource]['source']
+    collection_version = '%s_versions' % collection
 
     if app.config['MONGO_URI']:
         conn = pymongo.MongoClient(app.config['MONGO_URI'])
@@ -934,16 +935,34 @@ def create_index(app, resource, name, list_of_keys, index_options):
     kw['name'] = name
 
     try:
-        return coll.create_index(list_of_keys, **kw)
+        coll.create_index(list_of_keys, **kw)
     except pymongo.errors.OperationFailure as e:
         if e.code == 85:
-            # This error is raised when the definition of the index has
-            # been changed, we didn't found any spec out there but we
-            # think tat this error is not going to change and we can trust.
+            # This error is raised when the definition of the index has been
+            # changed, we didn't found any spec out there but we think that
+            # this error is not going to change and we can trust.
 
-            # by default, drop the old index with old configuration and
-            # create the index againt with the new configuration
+            # by default, drop the old index with old configuration and create
+            # the index again with the new configuration.
             coll.drop_index(name)
-            return coll.create_index(list_of_keys, **kw)
+            coll.create_index(list_of_keys, **kw)
         else:
             raise
+
+    if app.config['DOMAIN'][resource]['versioning']:
+        coll = db[collection_version]
+
+        try:
+            coll.create_index(list_of_keys, **kw)
+        except pymongo.errors.OperationFailure as e:
+            if e.code == 85:
+                # This error is raised when the definition of the index has
+                # been changed, we didn't found any spec out there but we think
+                # that this error is not going to change and we can trust.
+
+                # by default, drop the old index with old configuration and
+                # create the index again with the new configuration.
+                coll.drop_index(name)
+                coll.create_index(list_of_keys, **kw)
+            else:
+                raise
