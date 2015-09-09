@@ -897,6 +897,8 @@ def create_index(app, resource, name, list_of_keys, index_options):
     # pymongo directly.
     collection = app.config['SOURCES'][resource]['source']
 
+    raise Exception(json.dumps(app.config['SOURCES'][resource]))
+
     if app.config['MONGO_URI']:
         conn = pymongo.MongoClient(app.config['MONGO_URI'])
         db = conn.get_default_database()
@@ -934,16 +936,16 @@ def create_index(app, resource, name, list_of_keys, index_options):
     kw['name'] = name
 
     try:
-        return coll.create_index(list_of_keys, **kw)
+        coll.create_index(list_of_keys, **kw)
     except pymongo.errors.OperationFailure as e:
         if e.code == 85:
             # This error is raised when the definition of the index has
             # been changed, we didn't found any spec out there but we
-            # think tat this error is not going to change and we can trust.
+            # think that this error is not going to change and we can trust.
 
             # by default, drop the old index with old configuration and
-            # create the index againt with the new configuration
+            # create the index again with the new configuration.
             coll.drop_index(name)
-            return coll.create_index(list_of_keys, **kw)
+            coll.create_index(list_of_keys, **kw)
         else:
             raise
