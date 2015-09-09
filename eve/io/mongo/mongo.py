@@ -898,7 +898,7 @@ def create_index(app, resource, name, list_of_keys, index_options):
     collection = app.config['SOURCES'][resource]['source']
     collection_version = '%s_versions' % collection
 
-    if app.config['MONGO_URI']:
+    if 'MONGO_URI' in app.config and app.config['MONGO_URI']:
         conn = pymongo.MongoClient(app.config['MONGO_URI'])
         db = conn.get_default_database()
     else:
